@@ -10,8 +10,6 @@ namespace Drawing {
 	class UITab;
 
 	#define TITLE_BAR_HEIGHT 15
-	#define MINIMIZED_Y_POS 585
-	#define MINIMIZED_X_POS 234
 
 	class UI : public HookGroup {
 		private:
@@ -53,9 +51,9 @@ namespace Drawing {
 			void SetMinimizedX(unsigned int newX);
 			void SetMinimizedY(unsigned int newY);
 			void SetActive(bool newState) { Lock(); active = newState; Unlock(); };
-			void SetMinimized(bool newState);
+			void SetMinimized(bool newState, bool writeFile);
 			void SetName(std::string newName) { Lock(); name = newName;  Unlock(); };
-			void SetDragged(bool state, bool write_file); // only write config to file if write_file is true
+			void SetDragged(bool state, bool writeFile); // only write config to file if write_file is true
 			void SetDragged(bool state); // never writes the config file
 			void SetZOrder(unsigned int newZ) { Lock(); zOrder = newZ; Unlock(); };
 

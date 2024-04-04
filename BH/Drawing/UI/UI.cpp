@@ -15,22 +15,15 @@ UI::UI(std::string name, unsigned int xSize, unsigned int ySize) {
 	SetXSize(xSize);
 	SetYSize(ySize);
 	SetName(name);
-	string path = BH::path + "UI.ini";
-	int x = GetPrivateProfileInt(name.c_str(), "X", 0, path.c_str());
-	SetX(x);
-	int y = GetPrivateProfileInt(name.c_str(), "Y", 0, path.c_str());
-	SetY(y);
-	int minX = GetPrivateProfileInt(name.c_str(), "minimizedX", MINIMIZED_X_POS, path.c_str());
-	SetMinimizedX(minX);
-	int minY = GetPrivateProfileInt(name.c_str(), "minimizedY", MINIMIZED_Y_POS, path.c_str());
-	SetMinimizedY(minY);
-	char activeStr[20];
-	GetPrivateProfileString(name.c_str(), "Minimized", "true", activeStr, 20, path.c_str());
-	if (StringToBool(activeStr)) {
-		SetMinimized(true);
+	SetX(App.bhui.openedX.value);
+	SetY(App.bhui.openedY.value);
+	SetMinimizedX(App.bhui.minimizedX.value);
+	SetMinimizedY(App.bhui.minimizedY.value);
+	if (App.bhui.isMinimized.value) {
+		SetMinimized(true, false);
 		Minimized.push_back(this);
 	} else {
-		SetMinimized(false);
+		SetMinimized(false, false);
 	}
 	SetActive(false);
 	zOrder = UIs.size();
@@ -38,11 +31,12 @@ UI::UI(std::string name, unsigned int xSize, unsigned int ySize) {
 }
 UI::~UI() {
 	Lock();
-	WritePrivateProfileString(name.c_str(), "X", to_string<unsigned int>(GetX()).c_str(), string(BH::path + "UI.ini").c_str());
-	WritePrivateProfileString(name.c_str(), "Y", to_string<unsigned int>(GetY()).c_str(), string(BH::path + "UI.ini").c_str());
-	WritePrivateProfileString(name.c_str(), "Minimized", to_string<bool>(IsMinimized()).c_str(), string(BH::path + "UI.ini").c_str());
-	WritePrivateProfileString(name.c_str(), "minimizedX", to_string<unsigned int>(GetMinimizedX()).c_str(), string(BH::path + "UI.ini").c_str());
-	WritePrivateProfileString(name.c_str(), "minimizedY", to_string<unsigned int>(GetMinimizedY()).c_str(), string(BH::path + "UI.ini").c_str());
+	App.bhui.isMinimized.value = IsMinimized();
+	App.bhui.openedX.value = GetX();
+	App.bhui.openedY.value = GetY();
+	App.bhui.minimizedX.value = GetMinimizedX();
+	App.bhui.minimizedY.value = GetMinimizedY();
+	App.config->SaveConfig();
 
 	while(Tabs.size() > 0) {
 		delete (*Tabs.begin());
@@ -174,14 +168,15 @@ void UI::OnDraw() {
 	}
 }
 
-void UI::SetDragged(bool state, bool write_file) {
+void UI::SetDragged(bool state, bool writeFile) {
 	Lock(); 
 	dragged = state; 
-	if (!state && write_file) {
-		WritePrivateProfileString(name.c_str(), "X", to_string<unsigned int>(GetX()).c_str(), string(BH::path + "UI.ini").c_str());
-		WritePrivateProfileString(name.c_str(), "Y", to_string<unsigned int>(GetY()).c_str(), string(BH::path + "UI.ini").c_str());
-		WritePrivateProfileString(name.c_str(), "minimizedX", to_string<unsigned int>(GetMinimizedX()).c_str(), string(BH::path + "UI.ini").c_str());
-		WritePrivateProfileString(name.c_str(), "minimizedY", to_string<unsigned int>(GetMinimizedY()).c_str(), string(BH::path + "UI.ini").c_str());
+	if (!state && writeFile) {
+		App.bhui.openedX.value = GetX();
+		App.bhui.openedY.value = GetY();
+		App.bhui.minimizedX.value = GetMinimizedX();
+		App.bhui.minimizedY.value = GetMinimizedY();
+		App.config->SaveConfig();
 	}
 	Unlock(); 
 }
@@ -190,17 +185,20 @@ void UI::SetDragged(bool state) {
     SetDragged(state, false);
 }
 
-void UI::SetMinimized(bool newState) { 
+void UI::SetMinimized(bool newState, bool writeFile) {
 	if (newState == minimized) 
 		return; 
 	Lock();  
 	if (newState) {
 		Minimized.push_back(this);
-		BH::config->Write();
 	} else
-		Minimized.remove(this); 
-	minimized = newState; 
-	WritePrivateProfileString(name.c_str(), "Minimized", to_string<bool>(newState).c_str(), string(BH::path + "UI.ini").c_str());
+		Minimized.remove(this);
+	minimized = newState;
+	App.bhui.isMinimized.value = newState;
+	if (writeFile)
+	{
+		App.config->SaveConfig();
+	}
 	Unlock(); 
 };
 
@@ -226,7 +224,7 @@ bool UI::OnLeftClick(bool up, unsigned int mouseX, unsigned int mouseY) {
 			if(GetAsyncKeyState(VK_CONTROL))
 			{
 				if (up) {
-					SetMinimized(false);
+					SetMinimized(false, true);
 					Sort(this);
 				}
 				return true;
@@ -263,7 +261,7 @@ bool UI::OnLeftClick(bool up, unsigned int mouseX, unsigned int mouseY) {
 			SetDragged(false, true);
 			if( startX == mouseX && startY == mouseY && GetAsyncKeyState(VK_CONTROL) )
 			{
-				PrintText(135, "Right Click to Close" );
+				PrintText(135, "Right Click or ESC to Close");
 			}
 		}
 		SetActive(true);
@@ -295,7 +293,7 @@ bool UI::OnRightClick(bool up, unsigned int mouseX, unsigned int mouseY) {
 	}
 	if (InTitle(mouseX, mouseY) && !IsMinimized()) {
 		if (up) 
-			SetMinimized(true);
+			SetMinimized(true, true);
 		return true;
 	}
 	return false;

@@ -5,6 +5,8 @@
 
 #define BH_VERSION "PD2 0.1"
 #define SETTINGS_TEXT "Settings"
+#define SETTINGS_SIZE_X 400
+#define SETTINGS_SIZE_Y 366
 
 #define CODE_PAGE 1252 // windows-1252	ANSI Latin 1; Western European (Windows)
 
@@ -28,6 +30,25 @@ enum TextColor {
 	DarkGreen,
 	Purple,
 	Silver = 15
+};
+
+enum Font
+{
+	D2FONT_FONT8,					//Font8
+	D2FONT_FONT16,					//Font16
+	D2FONT_FONT30,					//Font30
+	D2FONT_FONT42,					//Font42
+	D2FONT_FONTFORMAL10,			//FontFormal10
+	D2FONT_FONTFORMAL12,			//FontFormal12
+	D2FONT_FONT6,					//Font6
+	D2FONT_FONT24,					//Font24
+	D2FONT_FONTFORMAL11,			//FontFormal11
+	D2FONT_FONTEXOCET10,			//FontExocet10
+	D2FONT_FONTRIDICULOUS,			//FontRidiculous
+	D2FONT_FONTEXOCET8,				//FontExocet8
+	D2FONT_REALLYTHELASTSUCKER,		//ReallyTheLastSucker
+	D2FONT_FONTINGAMECHAT,			//FontInGameChat
+	NUM_FONTS,
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -87,7 +108,7 @@ enum TextColor {
 ///////////////////////////////////////////////////
 #define CONTROL_EDITBOX			0x01
 #define CONTROL_IMAGE			0x02
-#define CONTROL_UNUSED			0x03
+#define CONTROL_ANIMIMAGE		0x03
 #define CONTROL_TEXTBOX			0x04
 #define CONTROL_SCROLLBAR		0x05
 #define CONTROL_BUTTON			0x06
@@ -644,6 +665,18 @@ enum TextColor {
 #define STAT_DEEP_WOUNDS				501
 
 #define STAT_CURSE_EFFECTIVENESS		504
+
+///////////////////////////////////////////////////
+// States
+///////////////////////////////////////////////////
+#define STATE_ITEMSET1				165
+#define STATE_ITEMSET2				166
+#define STATE_ITEMSET3				167
+#define STATE_ITEMSET4				168
+#define STATE_ITEMSET5				169
+#define STATE_ITEMSET6				170
+#define STATE_RUNEWORD				171
+#define ITEMSET_STATES				[STATE_ITEMSET1, STATE_ITEMSET2, STATE_ITEMSET3, STATE_ITEMSET4, STATE_ITEMSET5, STATE_ITEMSET6]
 
 ///////////////////////////////////////////////////
 // Unit Enchantments
@@ -1247,6 +1280,10 @@ enum QuestFlags {
 #define ITEM_GROUP_TOPAZ				0x00000400
 #define ITEM_GROUP_SKULL				0x00000800
 #define ITEM_GROUP_RUNE					0x00001000
+#define ITEM_GROUP_JEWELRY				0x00002000
+#define ITEM_GROUP_CHARM				0x00004000
+#define ITEM_GROUP_QUIVER				0x00008000
+#define ITEM_GROUP_MAP					0x00010000
 
 #define ITEM_GROUP_GEM (ITEM_GROUP_AMETHYST|ITEM_GROUP_DIAMOND|ITEM_GROUP_EMERALD|ITEM_GROUP_RUBY|ITEM_GROUP_SAPPHIRE|ITEM_GROUP_TOPAZ|ITEM_GROUP_SKULL)
 
@@ -1331,6 +1368,11 @@ enum InventoryTxtIndex {
 // IDs from ItemTypes.txt
 #define ITEM_TYPE_SHIELD			2
 #define ITEM_TYPE_ARMOR				3
+#define ITEM_TYPE_BOW_QUIVER		5
+#define ITEM_TYPE_XBOW_QUIVER		6
+#define ITEM_TYPE_RING				10
+#define ITEM_TYPE_AMULET			12
+#define ITEM_TYPE_CHARM				13
 #define ITEM_TYPE_BOOTS				15
 #define ITEM_TYPE_GLOVES			16
 #define ITEM_TYPE_BELT				19
@@ -1348,10 +1390,13 @@ enum InventoryTxtIndex {
 #define ITEM_TYPE_CROSSBOW			35
 #define ITEM_TYPE_MACE				36
 #define ITEM_TYPE_HELM				37
+#define ITEM_TYPE_MISSILE_POT		38
 #define ITEM_TYPE_JAVELIN			44
+#define ITEM_TYPE_ALLWEAPON			45
 #define ITEM_TYPE_THROWN			48
 #define ITEM_TYPE_ALLARMOR			50
 #define ITEM_TYPE_ALLSHIELD			51
+#define ITEM_TYPE_BLUNT				57
 #define ITEM_TYPE_AMAZON			60
 #define ITEM_TYPE_BARBARIAN			61
 #define ITEM_TYPE_NECROMANCER		62
@@ -1359,12 +1404,15 @@ enum InventoryTxtIndex {
 #define ITEM_TYPE_SORCERESS			64
 #define ITEM_TYPE_ASSASSIN			65
 #define ITEM_TYPE_DRUID				66
+#define ITEM_TYPE_CLAW				67
+#define ITEM_TYPE_ORB				68
 #define ITEM_TYPE_NECHEAD			69
 #define ITEM_TYPE_PALSHIELD			70
 #define ITEM_TYPE_BARHELM			71
 #define ITEM_TYPE_DRUPELT			72
 #define ITEM_TYPE_RUNE				74
 #define ITEM_TYPE_CIRCLET			75
+#define ITEM_TYPE_CLAW2				88
 
 #define ITEM_TYPE_CHIPPED_GEM		92
 #define ITEM_TYPE_FLAWED_GEM		93
@@ -1379,6 +1427,7 @@ enum InventoryTxtIndex {
 #define ITEM_TYPE_TOPAZ				102
 #define ITEM_TYPE_SKULL				103
 
+#define ITEM_TYPE_MAP				105
 #define ITEM_TYPE_T1_MAP			106
 #define ITEM_TYPE_T2_MAP			107
 #define ITEM_TYPE_T3_MAP			108

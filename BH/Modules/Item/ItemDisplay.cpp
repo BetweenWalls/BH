@@ -26,26 +26,6 @@
 	{"STAT62", STAT_MANALEECH},		\
 	{"REPLIFE", STAT_REPLENISHLIFE},
 
-// For ignoring size
-std::vector<std::string> colorreps =
-{
-	"ÿc0",
-	"ÿc1",
-	"ÿc2",
-	"ÿc3",
-	"ÿc4",
-	"ÿc5",
-	"ÿc6",
-	"ÿc7",
-	"ÿc8",
-	"ÿc9",
-	"ÿc;",
-	"ÿc:",
-	"\xFF""c\x06",
-	"\xFF""c\x07",
-	"\xFF""c\x09",
-	"\xFF""c\x0C"
-};
 
 // All colors here must also be defined in MAP_COLOR_REPLACEMENTS
 #define COLOR_REPLACEMENTS	\
@@ -55,16 +35,16 @@ std::vector<std::string> colorreps =
 	{"BLUE", "ÿc3"},		\
 	{"GOLD", "ÿc4"},		\
 	{"GRAY", "ÿc5"},		\
-	{"BLACK", "ÿc6"},		\
+	{"BLACK", *p_D2GFX_RenderMode != 4 ? "ÿc6" : "\xFF" "c\x02"},		\
 	{"TAN", "ÿc7"},			\
 	{"ORANGE", "ÿc8"},		\
 	{"YELLOW", "ÿc9"},		\
 	{"PURPLE", "ÿc;"},		\
 	{"DARK_GREEN", "ÿc:"},	\
-	{"CORAL", "\xFF" "c\x06"},		\
-	{"SAGE", "\xFF" "c\x07"},		\
-	{"TEAL", "\xFF" "c\x09"},		\
-	{"LIGHT_GRAY", "\xFF" "c\x0C"}
+	{"CORAL", *p_D2GFX_RenderMode != 4 ? "ÿc1" : "\xFF" "c\x06"},		\
+	{"SAGE", *p_D2GFX_RenderMode != 4 ? "ÿc2" : "\xFF" "c\x07"},		\
+	{"TEAL", *p_D2GFX_RenderMode != 4 ? "ÿc3" : "\xFF" "c\x09"},		\
+	{"LIGHT_GRAY", *p_D2GFX_RenderMode != 4 ? "ÿc5" : "\xFF" "c\x0C"}
 
 #define MAP_COLOR_WHITE     0x20
 
@@ -1063,6 +1043,8 @@ void SubstituteNameVariables(UnitItemInfo* uInfo,
 		COLOR_REPLACEMENTS
 	};
 	int nColorCodesSize = 0;
+	bool clFront = false;
+	bool clBack = false;
 	name.assign(action_name);
 	for (int n = 0; n < sizeof(replacements) / sizeof(replacements[0]); n++)
 	{
@@ -1075,6 +1057,12 @@ void SubstituteNameVariables(UnitItemInfo* uInfo,
 					(uInfo->item->pItemData->dwQuality >= ITEM_QUALITY_MAGIC || (uInfo->item->pItemData->dwFlags & ITEM_RUNEWORD) > 0) ||
 					inShop)
 				{
+					if (replacements[n].key == "CL")
+					{
+						int foundIndex = name.find("%" + replacements[n].key + "%");
+						if (foundIndex == 0) { clFront = true; }
+						if (foundIndex == name.length() - 4) { clBack = true; } // %CL% has a length of 4
+					}
 					name.replace(name.find("%" + replacements[n].key + "%"), replacements[n].key.length() + 2, replacements[n].value);
 				}
 				// Remove it on everything else
@@ -1088,13 +1076,10 @@ void SubstituteNameVariables(UnitItemInfo* uInfo,
 				name.replace(name.find("%" + replacements[n].key + "%"), replacements[n].key.length() + 2, replacements[n].value);
 			}
 		}
-		// Remove leading or trailing new lines from %CL% keywords
-		if (replacements[n].key == "CL")
-		{
-			if (name.front() == '\n') { name.erase(0, 1); }
-			if (name.back() == '\n') { name.erase(name.size() - 1, 1); }
-		}
 	}
+	// Remove leading or trailing new lines created by %CL% keywords
+	if (clFront == true && name.front() == '\n') { name.erase(0, 1); }
+	if (clBack == true && name.back() == '\n') { name.erase(name.size() - 1, 1); }
 
 	// Replace named stat output strings with their STAT# counterpart
 	map<string, int>::iterator it;
@@ -1271,7 +1256,7 @@ void SubstituteNameVariables(UnitItemInfo* uInfo,
 	if (bLimit)
 	{
 		// Calc the extra size from colors
-		std::regex color_reg(join(colorreps, "|"), std::regex_constants::ECMAScript);
+		std::regex color_reg("ÿc[0-9;:\\x01-\\x1F]", std::regex_constants::ECMAScript);
 		auto       color_matches = std::sregex_iterator(name.begin(), name.end(), color_reg);
 		auto       color_end = std::sregex_iterator();
 		auto       match_count = std::distance(color_matches, color_end);
@@ -2353,9 +2338,19 @@ bool MapIdCondition::EvaluateInternal(UnitItemInfo* uInfo,
 	Condition* arg1,
 	Condition* arg2)
 {
-	auto map_id = **Var_D2CLIENT_MapId();
+	UnitAny* player = D2CLIENT_GetPlayerUnit();
 
-	return IntegerCompare(map_id, operation, mapId, mapId2);
+	if (player &&
+		player->pAct &&
+		player->pAct->pRoom1 &&
+		player->pAct->pRoom1->pRoom2 &&
+		player->pAct->pRoom1->pRoom2->pLevel &&
+		player->pAct->pRoom1->pRoom2->pLevel->dwLevelNo > 0)
+	{
+		int map_id = (int)player->pAct->pRoom1->pRoom2->pLevel->dwLevelNo;
+		return IntegerCompare(map_id, operation, mapId, mapId2);
+	}
+	return false;
 }
 
 bool MapTierCondition::EvaluateInternal(UnitItemInfo* uInfo,
@@ -2596,8 +2591,15 @@ bool EquippedCondition::EvaluateInternal(UnitItemInfo* uInfo,
 	bool is_equipped = false;
 	if (uInfo->item->pItemData->pOwnerInventory)
 	{
-		if (uInfo->item->pItemData->pOwnerInventory->dwOwnerId == D2CLIENT_GetPlayerUnit()->dwUnitId || 
-			uInfo->item->pItemData->pOwnerInventory->dwOwnerId == D2CLIENT_GetMercUnit()->dwUnitId)
+		UnitAny* pMerc = nullptr;
+		UnitAny* pPlayer = D2CLIENT_GetPlayerUnit();
+		if (D2CLIENT_GetUIState(UI_MERC))
+		{
+			pMerc = D2CLIENT_GetMercUnit();
+		}
+
+		if ((pPlayer && uInfo->item->pItemData->pOwnerInventory->dwOwnerId == pPlayer->dwUnitId) ||
+			(pMerc && uInfo->item->pItemData->pOwnerInventory->dwOwnerId == pMerc->dwUnitId))
 		{
 			if (uInfo->item->pItemData->BodyLocation > 0 && uInfo->item->pItemData->ItemLocation == STORAGE_NULL)
 			{
@@ -2715,18 +2717,14 @@ bool GemmedCondition::EvaluateInternal(UnitItemInfo* uInfo,
 void SkillListCondition::Init()
 {
 	// Clear lists
-	classSkillList.clear();
-	skillList.clear();
 	goodClassSkills.clear();
 	goodTabSkills.clear();
 
 	// Build character skills list
-	BH::config->ReadAssoc("ClassSkillsList", skillList);
-	for (auto it = skillList.cbegin(); it != skillList.cend(); it++) { if (StringToBool((*it).second)) { goodClassSkills.push_back(stoi((*it).first)); } }
+	for (auto it = App.lootfilter.classSkillsList.values.cbegin(); it != App.lootfilter.classSkillsList.values.cend(); it++) { if (StringToBool((*it).second)) { goodClassSkills.push_back(stoi((*it).first)); } }
 
 	// Build tab skills list
-	BH::config->ReadAssoc("TabSkillsList", classSkillList);
-	for (auto it = classSkillList.cbegin(); it != classSkillList.cend(); it++) { if (StringToBool((*it).second)) { goodTabSkills.push_back(stoi((*it).first)); } }
+	for (auto it = App.lootfilter.tabSkillsList.values.cbegin(); it != App.lootfilter.tabSkillsList.values.cend(); it++) { if (StringToBool((*it).second)) { goodTabSkills.push_back(stoi((*it).first)); } }
 }
 
 bool SkillListCondition::EvaluateInternal(UnitItemInfo* uInfo,
@@ -2863,7 +2861,7 @@ int GetStatFromList(UnitItemInfo* uInfo, int itemStat)
 
 	if (uInfo->item->pItemData->dwFlags & ITEM_RUNEWORD)
 	{
-		StatList* pStateStatList = D2COMMON_GetStateStatList(uInfo->item, 171);  // 171=runeword
+		StatList* pStateStatList = D2COMMON_GetStateStatList(uInfo->item, STATE_RUNEWORD);
 		if (pStateStatList)
 		{
 			value += D2COMMON_GetStatValueFromStatList(pStateStatList, itemStat, 0);
@@ -2887,7 +2885,7 @@ void HandleUnknownItemCode(char* code,
 	if (!IsInitialized()) { return; }
 
 	// Avoid spamming endlessly
-	if (UnknownItemCodes.size() > 10 || (*BH::MiscToggles2)["Allow Unknown Items"].state) { return; }
+	if (UnknownItemCodes.size() > 10 || App.lootfilter.allowUnknownItems.toggle.isEnabled) { return; }
 	if (UnknownItemCodes.find(code) == UnknownItemCodes.end())
 	{
 		//PrintText(1, "Unknown item code %s: %c%c%c\n", tag, code[0], code[1], code[2]);

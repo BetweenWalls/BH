@@ -153,40 +153,6 @@ struct ControlPreferences
 	// ..
 };
 
-struct Control {
-	DWORD dwType;					//0x00
-	CellFile* pCellFile;				//0x04
-	DWORD dwDisabled;				//0x08
-	DWORD dwPosX;					//0x0C
-	DWORD dwPosY;					//0x10
-	DWORD dwSizeX;					//0x14
-	DWORD dwSizeY;					//0x18
-	VOID(__fastcall* Initialize)(Control* pControl);//0x1c
-	DWORD _3;						//0x20
-	DWORD* _4;						//0x24
-	DWORD* _5;						//0x28
-	DWORD _6;						//0x2C
-	DWORD* _7;						//0x30
-	DWORD* _8;						//0x34
-	DWORD _9;						//0x38
-	Control* pNext;					//0x3C
-	DWORD _10;						//0x40
-	DWORD dwMaxLength;				//0x44
-	union {
-		ControlText* pFirstText;		//0x48
-		DWORD dwScrollEntries;		//0x48
-	};
-	union {
-		ControlText* pLastText;		//0x4C
-		DWORD dwScrollPosition;		//0x4C
-	};
-	ControlText* pSelectedText;		//0x50
-	DWORD dwSelectEnd;				//0x54
-	DWORD dwSelectStart;				//0x58
-	wchar_t wText[0x1A];				//0x5C
-	Control* pChildControl;			//0x90
-};
-
 #pragma pack(push)
 #pragma pack(1)
 
@@ -532,6 +498,29 @@ struct ItemData {
 	WORD _12;						//0x6A
 	DWORD _13[6];					//0x6C
 	UnitAny* pOwner;				//0x84
+};
+
+struct D2PropertyStrc
+{
+	DWORD nProperty;					//0x00
+	DWORD nLayer;						//0x04
+	DWORD nMin;						//0x08
+	DWORD nMax;						//0x0C
+};
+
+struct D2GemsTxt
+{
+	char szName[32];						//0x00
+	char szLetter[8];						//0x20
+	union
+	{
+		DWORD dwItemCode;				//0x28
+		char szItemCode[4];					//0x28
+	};
+	WORD wStringId;						//0x2C
+	BYTE nNumMods;						//0x2E
+	BYTE nTransForm;						//0x2F
+	D2PropertyStrc pProperties[3][3];		//0x30
 };
 
 struct ItemText {
